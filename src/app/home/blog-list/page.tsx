@@ -5,13 +5,13 @@ import React, {
   useLayoutEffect,
   useEffect,
 } from "react";
-import { Eye, MessageCircle, CheckCircle } from "lucide-react";
-import { getauth } from "@/lib/getAuth";
+import { Eye, Trash2 } from "lucide-react";
 import { isTeacherCookieValid } from "@/lib/isTeacher";
 import { useRouter } from "next/navigation";
 import { updatePostStatusOnServer } from "@/lib/api/updatePosts";
 import { fetchPosts } from "@/lib/api/getPosts";
 import { fetchCourses } from "@/lib/api/getCourses";
+import { deletePostOnServer } from "@/lib/api/deletePost";
 import {
   Select,
   SelectContent,
@@ -20,13 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/Select";
+import AlertDialog from "@/components/alertDialog";
 
 interface Post {
   id: number;
   title: string;
   imageUrl: string;
   views: number;
-  comment: number;
   valid: boolean;
   user: string;
   courseName: string;
@@ -43,9 +43,12 @@ const BlogDisplayCard: React.FC<BlogDisplayCardProps> = ({
   courseNames,
   setPosts,
 }) => {
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<number | null>(null);
+
   const updateLocalPostStatus = (id: number, valid: boolean) => {
     setPosts((prevPosts) =>
-      prevPosts.map((post) => (post.id === id ? { ...post, valid } : post))
+      prevPosts.map((post) => (post.id === id ? { ...post, valid } : post)),
     );
   };
 
@@ -58,14 +61,23 @@ const BlogDisplayCard: React.FC<BlogDisplayCardProps> = ({
     }
   };
 
+  const deletePost = async (id: number) => {
+    try {
+      await deletePostOnServer(id);
+      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== id));
+    } catch (error) {
+      console.error("Error deleting post:", error);
+    }
+  };
+
   const router = useRouter();
 
   return (
     <div className="p-4">
-      <h1 className="text-3xl font-bold mb-4 py-10 font-serif  text-center">
+      <h1 className="text-3xl font-bold mb-4 py-10 font-serif text-center">
         Posts To Be Approved
       </h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 ">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {posts.length === 0 ? (
           <p className="text-lg">No posts available.</p>
         ) : (
@@ -96,20 +108,6 @@ const BlogDisplayCard: React.FC<BlogDisplayCardProps> = ({
                   Course Name:{" "}
                   <span className="font-medium">{post.courseName}</span>
                 </p>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <Eye className="w-5 h-5 mr-2" />
-                  <span>{post.views}</span>
-                </div>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  <span>{post.comment}</span>
-                </div>
-                {post.valid && (
-                  <div className="flex items-center text-green-600 mb-2">
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    <span>Approved</span>
-                  </div>
-                )}
               </div>
               <div className="flex justify-between p-4 bg-gray-100">
                 <button
@@ -124,11 +122,32 @@ const BlogDisplayCard: React.FC<BlogDisplayCardProps> = ({
                 >
                   Reject
                 </button>
+                <button
+                  onClick={() => {
+                    setPostToDelete(post.id);
+                    setIsAlertOpen(true);
+                  }}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
+      <AlertDialog
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        onConfirm={() => {
+          if (postToDelete !== null) {
+            deletePost(postToDelete);
+          }
+          setIsAlertOpen(false);
+        }}
+        title="Are you sure you want to delete this post?"
+        description="This action cannot be undone. This will permanently delete the post."
+      />
     </div>
   );
 };
@@ -154,7 +173,7 @@ const Page = () => {
   const handleFetchPosts = useCallback(async () => {
     try {
       const fetchedPosts = await fetchPosts(
-        selectedCourse !== "All" && selectedCourse ? selectedCourse : undefined
+        selectedCourse !== "All" && selectedCourse ? selectedCourse : undefined,
       );
       setPosts(fetchedPosts);
     } catch (error) {

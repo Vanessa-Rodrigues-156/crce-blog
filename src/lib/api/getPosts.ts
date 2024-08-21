@@ -19,7 +19,7 @@ export async function fetchPosts(
   valid?: boolean,
 ): Promise<Post[]> {
   const authToken = await getauth();
-  let url = "http://localhost:8055/items/posts";
+  let url = `${process.env.BACKEND_URL}/items/posts`;
   const filters = [];
 
   if (courseName) {
@@ -53,7 +53,7 @@ export async function fetchPosts(
     description: post.description || "",
     content: post.content || "",
     imageUrl: post.image
-      ? `http://localhost:8055/assets/${post.image}`
+      ? `${process.env.BACKEND_URL}/assets/${post.image}`
       : "https://via.placeholder.com/150",
     views: post.views || 0,
     comment: post.comments || 0,

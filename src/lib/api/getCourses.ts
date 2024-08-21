@@ -18,7 +18,7 @@ interface ApiCourse {
 }
 
 export const fetchCourses = async (): Promise<Course[]> => {
-  const response = await fetch("http://localhost:8055/items/courses");
+  const response = await fetch(`${process.env.BACKEND_URL}/items/courses`);
   if (!response.ok) {
     throw new Error(`Failed to fetch courses: ${response.statusText}`);
   }

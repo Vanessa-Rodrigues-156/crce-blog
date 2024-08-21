@@ -32,7 +32,7 @@ const Content: React.FC<ContentProps> = ({ onContentChange }) => {
       placeholder: "Start typing...",
       minHeight: 500,
       uploader: {
-        url: "http://localhost:8055/files",
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/files`,
         format: "json",
         method: "POST",
         headers: {
@@ -56,7 +56,7 @@ const Content: React.FC<ContentProps> = ({ onContentChange }) => {
         },
         process: (resp: UploaderResponse) => {
           if (resp && resp.data && resp.data.id) {
-            const fileUrl = `http://localhost:8055/assets/${resp.data.id}`;
+            const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/assets/${resp.data.id}`;
             return {
               files: [fileUrl],
               path: fileUrl,

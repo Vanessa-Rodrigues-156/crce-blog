@@ -5,7 +5,7 @@ import { checkUsername } from "@/lib/getUser";
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { fetchCourses } from "@/lib/api/getCourses";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/Select";
-import { useRouter } from "next/navigation";
 
 const Content = dynamic(() => import("./postComponents/content"), {
   ssr: false,
@@ -23,7 +22,6 @@ const Content = dynamic(() => import("./postComponents/content"), {
 const AddPost = () => {
   const [step, setStep] = useState(1);
   const router = useRouter();
-  const [startdone, isStartDone] = useState(false);
   const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
   const [post, setPost] = useState({
     title: "",
@@ -31,7 +29,14 @@ const AddPost = () => {
     description: "",
     courseName: "",
   });
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState({
+    title: "",
+    content: "",
+    description: "",
+    courseName: "",
+    file: "",
+  });
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -42,93 +47,112 @@ const AddPost = () => {
         console.error("Failed to fetch courses:", error);
       }
     };
-
     loadCourses();
   }, []);
 
-  function checkIfStartDone(e: any) {
-    e.preventDefault();
-    isStartDone(true);
-  }
-
-  function handleChange(e: any) {
-    setPost({ ...post, [e.target.name]: e.target.value });
-  }
-
-  function handleContentChange(newContent: any) {
-    setPost({ ...post, content: newContent });
-  }
-
-  function handleFileChange(e: any) {
-    setFile(e.target.files[0]);
-  }
-
-  async function handleSubmit(e: any) {
-    e.preventDefault();
-    try {
-      const authToken = await getauth();
-      const username = await checkUsername();
-      console.log(authToken);
-      let imageId = null;
-      if (file) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const imageResponse = await fetch("http://localhost:8055/files", {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `bearer ${authToken}`,
-          },
-        });
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          imageId = imageData.data.id;
-        } else {
-          throw new Error("Failed to upload image");
-        }
-      }
-
-      const postData = {
-        status: "published",
-        title: post.title,
-        description: post.description,
-        content: post.content,
-        image: imageId,
-        user: username,
-        courseName: post.courseName,
-      };
-
-      const response = await fetch("http://localhost:8055/items/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`, // Add auth token to post submission
-        },
-        body: JSON.stringify(postData),
-      });
-
-      if (response.ok) {
-        console.log("Post submitted successfully");
-        router.push("/");
-
-        // Redirect or show success message
-      } else {
-        console.error("Failed to submit post");
-        // Show error message
-      }
-    } catch (error) {
-      console.error("Error submitting post:", error);
-      // Show error message
-    }
-  }
-  const nextStep = () => {
-    if (step < 2) setStep(step + 1);
+  const validateStep1 = () => {
+    const newErrors = {
+      title: post.title ? "" : "Title is required.",
+      description: post.description ? "" : "Description is required.",
+      courseName: post.courseName ? "" : "Course selection is required.",
+      file: file ? "" : "Image upload is required.",
+      content: "", // Add this line to include the content property
+    };
+    setErrors(newErrors);
+    return !Object.values(newErrors).some((error) => error !== "");
+  };
+  const validateStep2 = () => {
+    const newErrors = {
+      content: post.content ? "" : "Content is required.",
+    };
+    setErrors((prevErrors) => ({ ...prevErrors, ...newErrors }));
+    return !Object.values(newErrors).some((error) => error !== "");
   };
 
-  const prevStep = () => {
-    if (step > 1) setStep(step - 1);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setPost({ ...post, [e.target.name]: e.target.value });
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setPost({ ...post, content: newContent });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFile(e.target.files?.[0] || null);
+  };
+
+  const nextStep = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (step === 1 && validateStep1()) {
+      setStep(2);
+    }
+  };
+
+  const prevStep = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setStep(1);
+  };
+
+  const handleSubmit = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (validateStep2()) {
+      try {
+        const authToken = await getauth();
+        const username = await checkUsername();
+        let imageId = null;
+        if (file) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const imageResponse = await fetch("http://localhost:8055/files", {
+            method: "POST",
+            body: formData,
+            headers: {
+              Authorization: `bearer ${authToken}`,
+            },
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            imageId = imageData.data.id;
+          } else {
+            throw new Error("Failed to upload image");
+          }
+        }
+
+        const postData = {
+          status: "published",
+          title: post.title,
+          description: post.description,
+          content: post.content,
+          image: imageId,
+          user: username,
+          courseName: post.courseName,
+        };
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/items/posts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify(postData),
+          },
+        );
+
+        if (response.ok) {
+          router.push("/");
+        } else {
+          console.error("Failed to submit post");
+        }
+      } catch (error) {
+        console.error("Error submitting post:", error);
+      }
+    }
   };
 
   return (
@@ -173,6 +197,11 @@ const AddPost = () => {
                       onChange={handleChange}
                       value={post.title}
                     />
+                    {errors.title && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.title}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -190,6 +219,11 @@ const AddPost = () => {
                       onChange={handleChange}
                       value={post.description}
                     />
+                    {errors.description && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.description}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -206,8 +240,10 @@ const AddPost = () => {
                       onChange={handleFileChange}
                       className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition duration-150 ease-in-out"
                     />
+                    {errors.file && (
+                      <p className="text-red-500 text-xs mt-1">{errors.file}</p>
+                    )}
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Select a Course
@@ -230,6 +266,11 @@ const AddPost = () => {
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    {errors.courseName && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.courseName}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="mt-8">
@@ -246,6 +287,9 @@ const AddPost = () => {
             ) : (
               <div>
                 <Content onContentChange={handleContentChange} />
+                {errors.content && (
+                  <p className="text-red-500 text-xs mt-1">{errors.content}</p>
+                )}
                 <div className="mt-8 space-y-4">
                   <motion.button
                     whileHover={{ scale: 1.05 }}

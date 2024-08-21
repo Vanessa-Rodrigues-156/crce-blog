@@ -1,18 +1,18 @@
 "use server";
 import { getauth } from "../getAuth";
 
-export async function updatePostStatusOnServer(id: number, valid: boolean) {
+export async function deletePostOnServer(id: number) {
   const authToken = await getauth();
   const response = await fetch(`${process.env.BACKEND_URL}/items/posts/${id}`, {
-    method: "PATCH",
+    method: "DELETE",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${authToken}`,
     },
-    body: JSON.stringify({ valid }),
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update post");
+    throw new Error("Failed to delete post");
   }
+
+  return { success: true, message: "Post deleted successfully" };
 }

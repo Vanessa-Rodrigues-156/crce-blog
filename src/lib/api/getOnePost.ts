@@ -16,7 +16,7 @@ interface Post {
 
 export async function fetchSinglePost(id: number): Promise<Post> {
   const authToken = await getauth();
-  const url = `http://localhost:8055/items/posts/${id}`;
+  const url = `${process.env.BACKEND_URL}/items/posts/${id}`;
 
   const response = await fetch(url, {
     headers: {
@@ -38,7 +38,7 @@ export async function fetchSinglePost(id: number): Promise<Post> {
     description: data.data.description || "",
     content: data.data.content || "",
     imageUrl: data.data.image
-      ? `http://localhost:8055/assets/${data.data.image}`
+      ? `${process.env.BACKEND_URL}/assets/${data.data.image}`
       : "https://via.placeholder.com/150",
     views: data.data.views || 0,
     comment: data.data.comment || 0,
