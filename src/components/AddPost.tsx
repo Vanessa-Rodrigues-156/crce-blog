@@ -106,7 +106,7 @@ const AddPost = () => {
           const formData = new FormData();
           formData.append("file", file);
 
-          const imageResponse = await fetch("http://localhost:8055/files", {
+          const imageResponse = await fetch("http://localhost:3000/files", {
             method: "POST",
             body: formData,
             headers: {

@@ -9,7 +9,7 @@ interface ContentProps {
 
 interface UploaderResponse {
   data?: {
-    id: string;
+    url: string;
   };
 }
 
@@ -47,7 +47,7 @@ const Content: React.FC<ContentProps> = ({ onContentChange }) => {
           return formData;
         },
         isSuccess: (resp: UploaderResponse) => {
-          return resp && resp.data && resp.data.id;
+          return resp && resp.data && resp.data.url;
         },
         getMsg: (resp: UploaderResponse) => {
           return resp && resp.data
@@ -55,8 +55,8 @@ const Content: React.FC<ContentProps> = ({ onContentChange }) => {
             : "Upload failed";
         },
         process: (resp: UploaderResponse) => {
-          if (resp && resp.data && resp.data.id) {
-            const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/assets/${resp.data.id}`;
+          if (resp && resp.data && resp.data.url) {
+            const fileUrl = resp.data.url;
             return {
               files: [fileUrl],
               path: fileUrl,
