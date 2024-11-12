@@ -10,6 +10,6 @@ export async function getauth() {
     console.log(authcookie.value);
     return authcookie.value;
   } else {
-    redirect("/signin");
+    // redirect("/signin");
   }
 }

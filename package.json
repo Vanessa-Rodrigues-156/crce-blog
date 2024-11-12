@@ -15,6 +15,8 @@
     "@radix-ui/react-navigation-menu": "^1.2.0",
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-switch": "^1.1.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.46.1",
     "class-variance-authority": "^0.7.0",
     "framer-motion": "^11.3.28",
     "jodit-react": "^4.1.2",
@@ -24,6 +26,7 @@
     "react": "^18",
     "react-dom": "^18",
     "sharp": "^0.33.4",
+    "supabase": "^1.219.2",
     "uuid": "^11.0.3",
     "zod": "^3.23.8"
   },

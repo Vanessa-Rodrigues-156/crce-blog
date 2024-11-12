@@ -14,7 +14,7 @@ export default function Posts() {
         await directusLogout();
         await deleteCookies();
         console.log("Successfully logged out");
-        router.push("/"); // Redirect to home or login page after logout
+        // router.push("/"); // Redirect to home or login page after logout
       } catch (error) {
         console.error("Logout failed:", error);
       }

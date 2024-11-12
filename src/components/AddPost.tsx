@@ -4,6 +4,7 @@ import { getauth } from "@/lib/getAuth";
 import { checkUsername } from "@/lib/getUser";
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { createPost } from "@/lib/api/createPost";
 import { fetchCourses } from "@/lib/api/getCourses";
 import { useRouter } from "next/navigation";
 import {
@@ -23,12 +24,24 @@ const AddPost = () => {
   const [step, setStep] = useState(1);
   const router = useRouter();
   const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
+
+  const exampleCourses = [
+    {
+      id: 1,
+      name: "course 1",
+    },
+  ];
+
   const [post, setPost] = useState({
     title: "",
-    content: "",
     description: "",
+    content: "",
+    image: "",
+    user: "chris",
+    status: "draft",
     courseName: "",
   });
+
   const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState({
     title: "",
@@ -70,9 +83,13 @@ const AddPost = () => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setPost({ ...post, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setPost((prevPost) => ({
+      ...prevPost,
+      [name]: value,
+    }));
   };
 
   const handleContentChange = (newContent: string) => {
@@ -95,63 +112,48 @@ const AddPost = () => {
     setStep(1);
   };
 
-  const handleSubmit = async (e: React.MouseEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep2()) {
+
+    let imageUrl: string | null = null;
+
+    if (file) {
       try {
-        const authToken = await getauth();
-        const username = await checkUsername();
-        let imageId = null;
-        if (file) {
-          const formData = new FormData();
-          formData.append("file", file);
+        const formData = new FormData();
+        formData.append("file", file);
 
-          const imageResponse = await fetch("http://localhost:3000/files", {
-            method: "POST",
-            body: formData,
-            headers: {
-              Authorization: `bearer ${authToken}`,
-            },
-          });
+        const imageResponse = await fetch("http://localhost:3000/files", {
+          method: "POST",
+          body: formData,
+        });
 
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json();
-            imageId = imageData.data.id;
-          } else {
-            throw new Error("Failed to upload image");
-          }
-        }
-
-        const postData = {
-          status: "published",
-          title: post.title,
-          description: post.description,
-          content: post.content,
-          image: imageId,
-          user: username,
-          courseName: post.courseName,
-        };
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/items/posts`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
-            },
-            body: JSON.stringify(postData),
-          },
-        );
-
-        if (response.ok) {
-          router.push("/");
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          imageUrl = imageData?.data?.url ?? null;
+          
         } else {
-          console.error("Failed to submit post");
+          console.error("Image upload failed:", await imageResponse.text());
+          throw new Error("Failed to upload image");
         }
       } catch (error) {
-        console.error("Error submitting post:", error);
+        console.error("Error during image upload:", error);
+        imageUrl = null;
       }
+    }
+
+    // Update the post state only if imageUrl is not null
+    if (imageUrl) {
+      setPost((prevPost) => ({
+        ...prevPost,
+        image: imageUrl,
+      }));
+    }
+
+    try {
+      const response = await createPost(post);
+      console.log("Post created successfully:", response);
+    } catch (error) {
+      console.error("Failed to create post:", error);
     }
   };
 
@@ -258,11 +260,7 @@ const AddPost = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          {courses.map((course) => (
-                            <SelectItem key={course.id} value={course.name}>
-                              {course.name}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="course 1"> course 1</SelectItem>
                         </SelectGroup>
                       </SelectContent>
                     </Select>

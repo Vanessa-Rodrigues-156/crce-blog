@@ -1,13 +1,13 @@
-'use server'
+"use server";
 
-import AddPost from '@/components/AddPost'
+import AddPost from "@/components/AddPost";
 
 const page = () => {
   return (
-      <>
-          <AddPost />
-      </>
-  )
-}
+    <>
+      <AddPost />
+    </>
+  );
+};
 
-export default page
+export default page;

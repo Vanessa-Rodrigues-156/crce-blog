@@ -9,6 +9,6 @@ export async function checkUsername() {
   if (usernameCookie && usernameCookie.value) {
     return usernameCookie.value;
   } else {
-    redirect("/signin");
+    // redirect("/signin");
   }
 }

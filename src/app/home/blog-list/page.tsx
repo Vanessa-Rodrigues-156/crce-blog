@@ -185,7 +185,7 @@ const Page = () => {
     const loadPosts = async () => {
       const isTeacher = await isTeacherCookieValid();
       if (!isTeacher) {
-        router.push("/");
+        // router.push("/");
         return;
       }
       handleFetchPosts();

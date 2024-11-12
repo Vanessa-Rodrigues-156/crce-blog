@@ -28,9 +28,9 @@ const Page = () => {
 
       // Redirect based on the isStudent state
       if (isStudent) {
-        router.push("/home/home-page");
+        // router.push("/home/home-page");
       } else {
-        router.push("/home/my-blogs");
+        // router.push("/home/my-blogs");
       }
     } catch (error) {
       console.error("Login failed:", error);
